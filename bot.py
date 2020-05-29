@@ -11,8 +11,9 @@ from secrets import LIST_OF_ADMINS, TOKEN
 from threading import Thread
 
 from telegram import ChatAction, ParseMode
-from telegram.ext import (CommandHandler, Filters, MessageHandler,
-                          PicklePersistence, Updater)
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import (CommandHandler, CallbackQueryHandler, MessageHandler,
+                          PicklePersistence, Updater, Filters)
 from telegram.utils.helpers import mention_html
 
 from rich import print
@@ -150,26 +151,28 @@ def forwarded(update, context):
     print(update.to_dict())
 
     user_id = update.effective_message.from_user.id
-    time = game_time(update.effective_message.forward_date)
-    message = update.effective_message.text
-    category = sort_message(message)
+    context.user_data['time'] = game_time(update.effective_message.forward_date)
+    text = update.effective_message.text
 
-    text = f'{time}\n{category}'
-    send(text, update, context)
-
-def sort_message(text):
     # this regex is out here because there isnt any other good way to detect the messages that carry this info
     guild_match = re.search(r'(?P<castle>[(🐺🐉🌑🦌🥔🦅🦈)])\[(?P<guild>[A-Z\d]{2,3})\](?P<name>\w+)', text)
     if guild_match:
-        return guild(guild_match)
+        context.user_data['text_info'] = guild(guild_match)
     elif 'Deposited successfully:' in text:
-        return g_deposit(text)
+        context.user_data['text_info'] = g_deposit(text)
     elif 'You received:' in text:
-        return quest(text)
+        context.user_data['text_info'] = quest(text)
+        ask_location(update, context)
+        return
     elif 'То remember the route you associated it with simple combination:' in text:
-        return alliance(text)
+        context.user_data['text_info'] = alliance(text)
     else:
-        return'unknown'
+        context.user_data['text_info'] = 'unknown'
+
+    response = f"{context.user_data['time']}\n{context.user_data['text_info']}"
+    send(response, update, context)
+
+
 
 def game_time(datetime):
     game_time_lookup = [
@@ -202,10 +205,31 @@ def alliance(text):
     alliance_match = re.search(pattern, text)
     return alliance_match.groupdict()
 
+def ask_location(update, context):
+    keyboard = [
+        [
+            InlineKeyboardButton("🌲", callback_data='🌲'),
+            InlineKeyboardButton("🍄", callback_data='🍄'),
+            InlineKeyboardButton("🏔", callback_data='🏔')
+        ]
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text('Where was this?', reply_markup=reply_markup)
+
+def button(update, context):
+    query = update.callback_query
+    query.answer()
+    context.user_data['most_recent_location_button'] = query.data
+    new_text = f"{context.user_data['time']} {context.user_data['most_recent_location_button']}\n{context.user_data['text_info']}"
+    query.edit_message_text(text=new_text)
+
 
 dispatcher.add_handler(CommandHandler('start', start))
 dispatcher.add_handler(MessageHandler(Filters.forwarded, forwarded))
 dispatcher.add_handler(CommandHandler('r', restart))
+dispatcher.add_handler(CommandHandler('correction', ask_location))
+dispatcher.add_handler(CallbackQueryHandler(button))
 dispatcher.add_error_handler(error)
 
 logging.info('bot started')
