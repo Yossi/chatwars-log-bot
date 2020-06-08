@@ -161,7 +161,7 @@ def forwarded(update, context):
     elif 'Deposited successfully:' in text:
         context.user_data['text_info'] = g_deposit(text)
     elif 'You received:' in text or 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋' in text:
-        context.user_data['text_info'] = quest(text)
+        # context.user_data['text_info'] = quest(text)
         ask_location(update, context)
         return
     elif 'То remember the route you associated it with simple combination:' in text:
@@ -226,7 +226,7 @@ def button(update, context):
     query = update.callback_query
     query.answer()
     context.user_data['most_recent_location_button'] = query.data
-    new_text = f"{context.user_data['time']} {context.user_data['most_recent_location_button']}\n{context.user_data['text_info']}"
+    new_text = f"{context.user_data['time']} {context.user_data['most_recent_location_button']}\n{quest(query.message.reply_to_message.text)}"
     query.edit_message_text(text=new_text)
 
 
