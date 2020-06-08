@@ -160,7 +160,7 @@ def forwarded(update, context):
         context.user_data['text_info'] = guild(guild_match)
     elif 'Deposited successfully:' in text:
         context.user_data['text_info'] = g_deposit(text)
-    elif 'You received:' in text:
+    elif 'You received:' in text or 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋' in text:
         context.user_data['text_info'] = quest(text)
         ask_location(update, context)
         return
@@ -193,8 +193,10 @@ def g_deposit(text):
     return g_deposit_match.groupdict()
 
 def quest(text):
+    pathfinder_text = 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋'
     results = {}
-    results['flavor_text'] = text.partition('You received:')[0].strip()
+    results['pathfinder'] = pathfinder_text in text
+    results['flavor_text'] = text.replace(pathfinder_text, '').partition('You received:')[0].strip()
 
     pattern = r'Earned: (?P<item>.+)\((?P<count>\d+)\)'
     quest_matches = re.finditer(pattern, text)
