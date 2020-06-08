@@ -170,8 +170,9 @@ def forwarded(update, context):
         context.user_data['text_info'] = 'unknown'
 
     response = f"{context.user_data['time']}\n{context.user_data['text_info']}"
-    send(response, update, context)
 
+    update.message.reply_text(response)
+    # send(response, update, context)
 
 
 
@@ -212,14 +213,14 @@ def alliance(text):
 def ask_location(update, context):
     keyboard = [
         [
-            InlineKeyboardButton("🌲", callback_data='🌲'),
-            InlineKeyboardButton("🍄", callback_data='🍄'),
-            InlineKeyboardButton("🏔", callback_data='🏔')
+            InlineKeyboardButton('🌲', callback_data='🌲'),
+            InlineKeyboardButton('🍄', callback_data='🍄'),
+            InlineKeyboardButton('🏔', callback_data='🏔')
         ]
     ]
 
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text('Where was this?', reply_markup=reply_markup)
+    update.message.reply_text('Where was this?', reply_markup=reply_markup, quote=True)
 
 def button(update, context):
     query = update.callback_query
