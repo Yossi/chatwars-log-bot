@@ -150,7 +150,8 @@ def forwarded(update, context):
     print(update.to_dict())
 
     user_id = update.effective_message.from_user.id
-    context.user_data['time'] = game_time(update.effective_message.forward_date)
+    context.user_data['exact_time'] = update.effective_message.forward_date
+    context.user_data['time'] = game_time(context.user_data['exact_time'])
     text = update.effective_message.text
 
     # this regex is out here because there isnt any other good way to detect the messages that carry this info
