@@ -80,7 +80,7 @@ def send(payload, update, context):
         payload.seek(0)
         if kind and kind.mime.startswith('image'):
             logging.info(f'bot said:\n<image>')
-            context.bot.send_photo(chat_id=update.effective_message.chat_id, photo=payload)
+            context.bot.send_photo(chat_id=chat_id, photo=payload)
         else:
             logging.info(f'bot said:\n<other>')
             context.bot.send_document(chat_id=chat_id, document=payload)
@@ -99,10 +99,6 @@ def log(func):
     def wrapped(update, context, *args, **kwargs):
         id = update.effective_user.id
         name = update.effective_user.username
-        context.user_data['meta'] = {
-            'last_talked': update.effective_message['date'],
-            'user_details': update.effective_message.to_dict()['from']
-        }
         logging.info(f'{name} ({id}) said:\n{update.effective_message.text}')
         return func(update, context, *args, **kwargs)
     return wrapped
