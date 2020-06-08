@@ -24,6 +24,11 @@ persistence = PicklePersistence(filename='user.persist', on_flush=False)
 updater = Updater(token=TOKEN, persistence=persistence, use_context=True)
 dispatcher = updater.dispatcher
 
+class FilterFromCW(BaseFilter):
+    def filter(self, message):
+        return message.forward_from.id in [408101137]
+
+from_chatwars = FilterFromCW()
 
 def error(update, context):
     # add all the dev user_ids in this list. You can also add ids of channels or groups.
@@ -146,7 +151,6 @@ def restart(update, context):
 @log
 def forwarded(update, context):
     '''main function that deals with forwarded'''
-    if not update.effective_message.forward_from.id in [408101137]: return
     print(update.to_dict())
 
     user_id = update.effective_message.from_user.id
@@ -170,6 +174,7 @@ def forwarded(update, context):
 
     response = f"{context.user_data['time']}\n{context.user_data['text_info']}"
     send(response, update, context)
+
 
 
 
@@ -204,6 +209,7 @@ def alliance(text):
     alliance_match = re.search(pattern, text)
     return alliance_match.groupdict()
 
+
 def ask_location(update, context):
     keyboard = [
         [
@@ -225,7 +231,7 @@ def button(update, context):
 
 
 dispatcher.add_handler(CommandHandler('start', start))
-dispatcher.add_handler(MessageHandler(Filters.forwarded, forwarded))
+dispatcher.add_handler(MessageHandler(Filters.forwarded & Filters.text & from_chatwars, forwarded))
 dispatcher.add_handler(CommandHandler('r', restart))
 dispatcher.add_handler(CommandHandler('correction', ask_location))
 dispatcher.add_handler(CallbackQueryHandler(button))
