@@ -1,23 +1,22 @@
+import html
 import logging
 import os
-import html
-from datetime import datetime
-import sys
 import re
+import sys
 import traceback
+from datetime import datetime
 from functools import wraps
-import filetype
+from pprint import pprint
 from secrets import LIST_OF_ADMINS, TOKEN
 from threading import Thread
 
-from telegram import ChatAction, ParseMode
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import (CommandHandler, CallbackQueryHandler, MessageHandler,
-                          PicklePersistence, Updater, Filters)
-from telegram.utils.helpers import mention_html
-
+import filetype
 from rich import print
-from pprint import pprint
+from telegram import (ChatAction, InlineKeyboardButton, InlineKeyboardMarkup,
+                      ParseMode)
+from telegram.ext import (BaseFilter, CallbackQueryHandler, CommandHandler,
+                          Filters, MessageHandler, PicklePersistence, Updater)
+from telegram.utils.helpers import mention_html
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s\n%(message)s', level=logging.INFO)
 
