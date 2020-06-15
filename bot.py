@@ -68,23 +68,6 @@ def error(update, context):
     # we raise the error again, so the logger module catches it. If you don't use the logger module, use it.
     raise
 
-def send(payload, update, context):
-    chat_id = update.effective_message.chat_id
-    if isinstance(payload, str):
-        max_size = 4096
-        for text in [payload[i:i + max_size] for i in range(0, len(payload), max_size)]:
-            logging.info(f'bot said:\n{text}')
-            context.bot.send_message(chat_id=chat_id, text=text, parse_mode=ParseMode.HTML, disable_web_page_preview=True)
-    else:
-        kind = filetype.guess(payload.read(261))
-        payload.seek(0)
-        if kind and kind.mime.startswith('image'):
-            logging.info(f'bot said:\n<image>')
-            context.bot.send_photo(chat_id=chat_id, photo=payload)
-        else:
-            logging.info(f'bot said:\n<other>')
-            context.bot.send_document(chat_id=chat_id, document=payload)
-
 def send_typing_action(func):
     '''decorator that sends typing action while processing func command.'''
     @wraps(func)
@@ -124,7 +107,7 @@ def start(update, context):
            '\n'\
            'Send me something with your name and guild tag on it.'
 
-    send(text, update, context)
+    context.bot.send_message(chat_id=update.effective_message.chat_id, text=text, parse_mode=ParseMode.HTML)
 
 
 @restricted
@@ -137,17 +120,17 @@ def restart(update, context):
         os.execl(sys.executable, sys.executable, *sys.argv)
 
     logging.info('Bot is restarting...')
-    send('Bot is restarting...', update, context)
+    context.bot.send_message(chat_id=update.effective_message.chat_id, text='Bot is restarting...')
     Thread(target=stop_and_restart).start()
     logging.info("...and we're back")
-    send("...and we're back", update, context)
+    context.bot.send_message(chat_id=update.effective_message.chat_id, text="...and we're back")
 
 
 @send_typing_action
 @log
 def forwarded(update, context):
     '''main function that deals with forwarded'''
-    print(update.to_dict())
+    # print(update.to_dict())
 
     user_id = update.effective_message.from_user.id
     context.user_data['exact_time'] = update.effective_message.forward_date
@@ -172,8 +155,6 @@ def forwarded(update, context):
     response = f"{context.user_data['time']}\n{context.user_data['text_info']}"
 
     update.message.reply_text(response)
-    # send(response, update, context)
-
 
 
 def game_time(datetime):
