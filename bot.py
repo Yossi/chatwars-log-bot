@@ -154,7 +154,7 @@ def forwarded(update, context):
         routes[decode['code']] = decode
         context.bot_data['routes'] = routes
         response = '{name}\nTimes seen: {count}'.format(**decode)
-        update.message.reply_text(response)
+        update.message.reply_text(response, quote=True)
         return
     elif 'You received:' in text or 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋' in text:
         # context.user_data['text_info'] = quest(text)
@@ -163,9 +163,9 @@ def forwarded(update, context):
     else:
         context.user_data['text_info'] = 'unknown'
 
-    response = f"{context.user_data['time']}\n{int(context.user_data['exact_time'].timestamp())}\n{context.user_data['text_info']}"
+    response = f"{time}\n{exact_time}\n{context.user_data['text_info']}"
 
-    update.message.reply_text(response)
+    update.message.reply_text(response, quote=True)
 
 
 def game_time(datetime):
@@ -213,12 +213,11 @@ def ask_location(update, context):
 def button(update, context):
     query = update.callback_query
     query.answer()
-    context.user_data['most_recent_location_button'] = query.data
-    new_text = f"{context.user_data['time']} {context.user_data['most_recent_location_button']}\n{quest(query.message.reply_to_message.text)}"
+    new_text = f"{game_time(query.message.reply_to_message.forward_date)} {query.data}\n{quest(query.message.reply_to_message.text)}"
     query.edit_message_text(text=new_text)
 
 def get_routes(update, context):
-    # TODO: handle thiswhen it gets too big for one tg message
+    # TODO: handle this when it gets too big for one tg message
     update.message.reply_text(json.dumps(context.bot_data.get('routes'), indent=4, sort_keys=True, default=str))
 
 
