@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import sys
+import json
 import traceback
 from datetime import datetime
 from functools import wraps
@@ -20,7 +21,7 @@ from telegram.utils.helpers import mention_html
 
 logging.basicConfig(format='%(asctime)s - %(levelname)s\n%(message)s', level=logging.INFO)
 
-persistence = PicklePersistence(filename='user.persist', on_flush=False)
+persistence = PicklePersistence(filename='data.persist', on_flush=False)
 updater = Updater(token=TOKEN, persistence=persistence, use_context=True)
 dispatcher = updater.dispatcher
 
@@ -133,10 +134,9 @@ def forwarded(update, context):
     # print(update.to_dict())
 
     user_id = update.effective_message.from_user.id
-    context.user_data['exact_time'] = update.effective_message.forward_date
-    context.user_data['time'] = game_time(context.user_data['exact_time'])
     text = update.effective_message.text
-
+    exact_time = update.effective_message.forward_date
+    time = game_time(exact_time)
     # this regex is out here because there isnt any other good way to detect the messages that carry this info
     guild_match = re.search(r'(?P<castle>[(🐺🐉🌑🦌🥔🦅🦈)])\[(?P<guild>[A-Z\d]{2,3})\](?P<name>\w+)', text)
     if guild_match:
@@ -144,18 +144,26 @@ def forwarded(update, context):
         context.user_data['name'] = user
         update.message.reply_text(f'Hello, {user}')
         return
+    elif 'То remember the route you associated it with simple combination:' in text:
+        routes = context.bot_data.get('routes', {})
+        decode = alliance(text)
+        times_seen = routes.get(decode['code'], {}).get('times_seen', set())
+        times_seen.add(str(exact_time))
+        decode['times_seen'] = times_seen
+        decode['count'] = len(times_seen)
+        routes[decode['code']] = decode
+        context.bot_data['routes'] = routes
+        response = '{name}\nTimes seen: {count}'.format(**decode)
         update.message.reply_text(response)
         return
     elif 'You received:' in text or 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋' in text:
         # context.user_data['text_info'] = quest(text)
         ask_location(update, context)
         return
-    elif 'То remember the route you associated it with simple combination:' in text:
-        context.user_data['text_info'] = alliance(text)
     else:
         context.user_data['text_info'] = 'unknown'
 
-    response = f"{context.user_data['time']}\n{context.user_data['text_info']}"
+    response = f"{context.user_data['time']}\n{int(context.user_data['exact_time'].timestamp())}\n{context.user_data['text_info']}"
 
     update.message.reply_text(response)
 
@@ -209,11 +217,16 @@ def button(update, context):
     new_text = f"{context.user_data['time']} {context.user_data['most_recent_location_button']}\n{quest(query.message.reply_to_message.text)}"
     query.edit_message_text(text=new_text)
 
+def get_routes(update, context):
+    # TODO: handle thiswhen it gets too big for one tg message
+    update.message.reply_text(json.dumps(context.bot_data.get('routes'), indent=4, sort_keys=True, default=str))
+
 
 dispatcher.add_handler(CommandHandler('start', start))
 dispatcher.add_handler(MessageHandler(Filters.forwarded & Filters.text & from_chatwars, forwarded))
 dispatcher.add_handler(CommandHandler('r', restart))
 dispatcher.add_handler(CommandHandler('correction', ask_location))
+dispatcher.add_handler(CommandHandler('routes', get_routes))
 dispatcher.add_handler(CallbackQueryHandler(button))
 dispatcher.add_error_handler(error)
 
