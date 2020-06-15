@@ -140,9 +140,12 @@ def forwarded(update, context):
     # this regex is out here because there isnt any other good way to detect the messages that carry this info
     guild_match = re.search(r'(?P<castle>[(🐺🐉🌑🦌🥔🦅🦈)])\[(?P<guild>[A-Z\d]{2,3})\](?P<name>\w+)', text)
     if guild_match:
-        context.user_data['text_info'] = guild(guild_match)
-    elif 'Deposited successfully:' in text:
-        context.user_data['text_info'] = g_deposit(text)
+        user = '{castle}[{guild}]{name}'.format(**guild(guild_match))
+        context.user_data['name'] = user
+        update.message.reply_text(f'Hello, {user}')
+        return
+        update.message.reply_text(response)
+        return
     elif 'You received:' in text or 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋' in text:
         # context.user_data['text_info'] = quest(text)
         ask_location(update, context)
@@ -169,10 +172,6 @@ def game_time(datetime):
 def guild(guild_match):
     return guild_match.groupdict()
 
-def g_deposit(text):
-    pattern = r'Deposited successfully: (?P<item>.+)\((?P<count>\d+)\)'
-    g_deposit_match = re.search(pattern, text)
-    return g_deposit_match.groupdict()
 
 def quest(text):
     pathfinder_text = 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋'
