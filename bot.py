@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import json
+from itertools import zip_longest
 import traceback
 from datetime import datetime
 from functools import wraps
@@ -216,9 +217,18 @@ def button(update, context):
     new_text = f"{game_time(query.message.reply_to_message.forward_date)} {query.data}\n{quest(query.message.reply_to_message.text)}"
     query.edit_message_text(text=new_text)
 
+@send_typing_action
+@log
 def get_routes(update, context):
-    # TODO: handle this when it gets too big for one tg message
-    update.message.reply_text(json.dumps(context.bot_data.get('routes'), indent=4, sort_keys=True, default=str))
+    response = json.dumps(context.bot_data.get('routes'), indent=3, sort_keys=True, default=str)
+    for response_slice in zip_longest(*[iter(response)]*4096, fillvalue=''):
+        update.message.reply_text(''.join(response_slice))
+
+    # output = []
+    # for loc in context.bot_data.get('routes').values():
+    #     location = f"{loc['name']} <code>{loc['code']}</code>\nSeen: {loc['count']} Last: {max(loc['times_seen'])}\n{'Occupied' if loc['occupied'] else ''}{'Defended' if loc['defended'] else ''}"
+    #     output.append(location)
+    # print(sorted(output))
 
 
 dispatcher.add_handler(CommandHandler('start', start))
