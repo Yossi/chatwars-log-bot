@@ -26,11 +26,14 @@ persistence = PicklePersistence(filename='data.persist', on_flush=False)
 updater = Updater(token=TOKEN, persistence=persistence, use_context=True)
 dispatcher = updater.dispatcher
 
+
 class FilterFromCW(BaseFilter):
     def filter(self, message):
         return message.forward_from.id in [408101137]
 
+
 from_chatwars = FilterFromCW()
+
 
 def error(update, context):
     # add all the dev user_ids in this list. You can also add ids of channels or groups.
@@ -70,13 +73,15 @@ def error(update, context):
     # we raise the error again, so the logger module catches it. If you don't use the logger module, use it.
     raise
 
+
 def send_typing_action(func):
     '''decorator that sends typing action while processing func command.'''
     @wraps(func)
     def wrapped(update, context, *args, **kwargs):
         context.bot.send_chat_action(chat_id=update.effective_message.chat_id, action=ChatAction.TYPING)
-        return func(update, context,  *args, **kwargs)
+        return func(update, context, *args, **kwargs)
     return wrapped
+
 
 def log(func):
     '''decorator that logs who said what to the bot'''
@@ -87,6 +92,7 @@ def log(func):
         logging.info(f'{name} ({id}) said:\n{update.effective_message.text}')
         return func(update, context, *args, **kwargs)
     return wrapped
+
 
 def restricted(func):
     '''decorator that restricts use to only the admins listed in secrets.py'''
@@ -178,6 +184,7 @@ def game_time(datetime):
     ]
     return game_time_lookup[datetime.hour]
 
+
 def guild(guild_match):
     return guild_match.groupdict()
 
@@ -192,6 +199,7 @@ def quest(text):
     quest_matches = re.finditer(pattern, text)
     results['loot'] = [match.groupdict() for match in quest_matches]
     return str(results)
+
 
 def alliance(text):
     pattern = r'You found hidden \w+ (?P<name>.+)\n(?P<occupied>You noticed that objective is captured by alliance\.\n)?(?P<defended>You noticed a horde of defender near it\.\n)?То remember the route you associated it with simple combination: (?P<code>\w+)'
@@ -211,17 +219,19 @@ def ask_location(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text('Where was this?', reply_markup=reply_markup, quote=True)
 
+
 def button(update, context):
     query = update.callback_query
     query.answer()
     new_text = f"{game_time(query.message.reply_to_message.forward_date)} {query.data}\n{quest(query.message.reply_to_message.text)}"
     query.edit_message_text(text=new_text)
 
+
 @send_typing_action
 @log
 def get_routes(update, context):
     response = json.dumps(context.bot_data.get('routes'), indent=3, sort_keys=True, default=str)
-    for response_slice in zip_longest(*[iter(response)]*4096, fillvalue=''):
+    for response_slice in zip_longest(*[iter(response)] * 4096, fillvalue=''):
         update.message.reply_text(''.join(response_slice))
 
     # output = []

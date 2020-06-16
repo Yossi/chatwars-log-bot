@@ -131,3 +131,5 @@ dmypy.json
 # Just for this project
 secrets.py
 *.persist
+
+.vscode/
