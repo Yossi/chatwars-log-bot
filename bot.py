@@ -1,13 +1,13 @@
 import html
+import json
 import logging
 import os
 import re
 import sys
-import json
-from itertools import zip_longest
 import traceback
 from datetime import datetime
 from functools import wraps
+from itertools import zip_longest
 from pprint import pprint
 from secrets import LIST_OF_ADMINS, TOKEN
 from threading import Thread
@@ -137,14 +137,14 @@ def restart(update, context):
 @send_typing_action
 @log
 def forwarded(update, context):
-    '''main function that deals with forwarded'''
+    '''main function that deals with forwarded messages'''
     # print(update.to_dict())
 
     user_id = update.effective_message.from_user.id
     text = update.effective_message.text
     exact_time = update.effective_message.forward_date
     time = game_time(exact_time)
-    # this regex is out here because there isnt any other good way to detect the messages that carry this info
+    # this regex is out here because there isn't any other good way to detect the messages that carry this info
     guild_match = re.search(r'(?P<castle>[(🐺🐉🌑🦌🥔🦅🦈)])\[(?P<guild>[A-Z\d]{2,3})\](?P<name>\w+)', text)
     if guild_match:
         user = '{castle}[{guild}]{name}'.format(**guild(guild_match))
