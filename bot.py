@@ -146,7 +146,7 @@ def forwarded(update, context):
     time = game_time(exact_time)
     # this regex is out here because there isn't any other good way to detect the messages that carry this info
     guild_match = re.search(r'(?P<castle>[(🐺🐉🌑🦌🥔🦅🦈)])\[(?P<guild>[A-Z\d]{2,3})\](?P<name>\w+)', text)
-    if guild_match:
+    if guild_match and update.effective_message.chat.type == 'private':
         user = '{castle}[{guild}]{name}'.format(**guild(guild_match))
         context.user_data['name'] = user
         update.message.reply_text(f'Hello, {user}')
@@ -163,12 +163,14 @@ def forwarded(update, context):
         response = '{name}\nTimes seen: {count}'.format(**decode)
         update.message.reply_text(response, quote=True)
         return
-    elif 'You received:' in text or 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋' in text:
+    elif 'You received:' in text or 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋' in text and update.effective_message.chat.type == 'private':
         # context.user_data['text_info'] = quest(text)
         ask_location(update, context)
         return
-    else:
+    elif update.effective_message.chat.type == 'private':
         context.user_data['text_info'] = 'unknown'
+    else:
+        return
 
     response = f"{time}\n{exact_time}\n{context.user_data['text_info']}"
 
