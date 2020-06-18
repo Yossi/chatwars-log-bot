@@ -150,32 +150,38 @@ def forwarded(update, context):
         user = '{castle}[{guild}]{name}'.format(**guild(guild_match))
         context.user_data['name'] = user
         update.message.reply_text(f'Hello, {user}')
-        return
     elif 'То remember the route you associated it with simple combination:' in text:
-        routes = context.bot_data.get('routes', {})
-        decode = alliance(text)
-        times_seen = routes.get(decode['code'], {}).get('times_seen', set())
-        times_seen.add(str(exact_time))
-        if str(exact_time) < max(times_seen):
-            decode = routes.get(decode['code'], {})
-        decode['times_seen'] = times_seen
-        decode['count'] = len(times_seen)
-        routes[decode['code']] = decode
-        context.bot_data['routes'] = routes
-        response = '{name}\nTimes seen: {count}'.format(**decode)
-        update.message.reply_text(response, quote=True)
-        return
-    elif 'You received:' in text or 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋' in text and update.effective_message.chat.type == 'private':
+        store_route(update, context)
+    elif (('You received:' in text
+           or 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋' in text
+           or text in context.bot_data.get('flavors', {}))
+          and (update.effective_message.chat.type == 'private')):
         # context.user_data['text_info'] = quest(text)
         ask_location(update, context)
-        return
     elif update.effective_message.chat.type == 'private':
         context.user_data['text_info'] = 'unknown'
+        response = f"{time}\n{exact_time}\n{context.user_data['text_info']}"
+        update.message.reply_text(response, quote=True)
     else:
-        return
+        pass
 
-    response = f"{time}\n{exact_time}\n{context.user_data['text_info']}"
 
+def guild(guild_match):
+    return guild_match.groupdict()
+
+
+def store_route(update, context):
+    routes = context.bot_data.get('routes', {})
+    decode = alliance(text)
+    times_seen = routes.get(decode['code'], {}).get('times_seen', set())
+    times_seen.add(str(exact_time))
+    if str(exact_time) < max(times_seen):
+        decode = routes.get(decode['code'], {})
+    decode['times_seen'] = times_seen
+    decode['count'] = len(times_seen)
+    routes[decode['code']] = decode
+    context.bot_data['routes'] = routes
+    response = '{name}\nTimes seen: {count}'.format(**decode)
     update.message.reply_text(response, quote=True)
 
 
@@ -187,10 +193,6 @@ def game_time(datetime):
         'morning'
     ]
     return game_time_lookup[datetime.hour]
-
-
-def guild(guild_match):
-    return guild_match.groupdict()
 
 
 def quest(text):
@@ -248,7 +250,6 @@ def get_routes(update, context):
 dispatcher.add_handler(CommandHandler('start', start))
 dispatcher.add_handler(MessageHandler(Filters.forwarded & Filters.text & from_chatwars, forwarded))
 dispatcher.add_handler(CommandHandler('r', restart))
-dispatcher.add_handler(CommandHandler('correction', ask_location))
 dispatcher.add_handler(CommandHandler('routes', get_routes))
 dispatcher.add_handler(CallbackQueryHandler(button))
 dispatcher.add_error_handler(error)
