@@ -11,6 +11,7 @@ from itertools import zip_longest
 from pprint import pprint
 from secrets import LIST_OF_ADMINS, TOKEN
 from threading import Thread
+from collections import Counter
 
 import filetype
 from rich import print
@@ -195,18 +196,6 @@ def game_time(datetime):
     return game_time_lookup[datetime.hour]
 
 
-def quest(text):
-    pathfinder_text = 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋'
-    results = {}
-    results['pathfinder'] = pathfinder_text in text
-    results['flavor_text'] = text.replace(pathfinder_text, '').partition('You received:')[0].strip()
-
-    pattern = r'Earned: (?P<item>.+)\((?P<count>\d+)\)'
-    quest_matches = re.finditer(pattern, text)
-    results['loot'] = [match.groupdict() for match in quest_matches]
-    return str(results)
-
-
 def alliance(text):
     pattern = r'You found hidden \w+ (?P<name>.+)\n(?P<occupied>You noticed that objective is captured by alliance\.\n)?(?P<defended>You noticed a horde of defender near it\.\n)?То remember the route you associated it with simple combination: (?P<code>\w+)'
     alliance_match = re.search(pattern, text)
@@ -221,16 +210,52 @@ def ask_location(update, context):
             InlineKeyboardButton('🏔', callback_data='🏔')
         ]
     ]
-
     reply_markup = InlineKeyboardMarkup(keyboard)
-    update.message.reply_text('Where was this?', reply_markup=reply_markup, quote=True)
+
+    data = quest(update.effective_message.text)
+    stats = context.user_data.get('flavors', {}).get(data['flavor_text'])
+
+    update.message.reply_text(f'Where was this?\n{stats}', reply_markup=reply_markup, quote=True)
 
 
 def button(update, context):
     query = update.callback_query
     query.answer()
-    new_text = f"{game_time(query.message.reply_to_message.forward_date)} {query.data}\n{quest(query.message.reply_to_message.text)}"
+
+    exact_time = query.message.reply_to_message.forward_date
+    data = quest(query.message.reply_to_message.text)
+
+    flavors = context.user_data.get('flavors', {})
+    count, times = flavors.get(data['flavor_text'], (Counter(), set()))
+    if str(exact_time) not in times:
+        times.add(str(exact_time))
+        count.update(query.data)
+        flavors[data['flavor_text']] = count, times
+        context.user_data['flavors'] = flavors
+
+    new_text = f"{game_time(query.message.reply_to_message.forward_date)} {query.data}\n{data}\n{count}"
     query.edit_message_text(text=new_text)
+
+
+def quest(text):
+    pathfinder_text = 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋'
+    results = {}
+    results['pathfinder'] = pathfinder_text in text
+    results['flavor_text'] = text.replace(pathfinder_text, '').partition('You received:')[0].strip()
+
+    pattern = r'Earned: (?P<item>.+)\((?P<count>\d+)\)'
+    quest_matches = re.finditer(pattern, text)
+    results['loot'] = [match.groupdict() for match in quest_matches]
+    return results
+
+
+@restricted
+@send_typing_action
+@log
+def get_flavors(update, context):
+    response = json.dumps(context.user_data.get('flavors'), indent=3, sort_keys=True, default=str)
+    for response_slice in zip_longest(*[iter(response)] * 4096, fillvalue=''):
+        update.message.reply_text(''.join(response_slice))
 
 
 @send_typing_action
@@ -247,10 +272,21 @@ def get_routes(update, context):
     # print(sorted(output))
 
 
+@restricted
+@send_typing_action
+@log
+def get_bot_data(update, context):
+    response = json.dumps(context.bot_data, indent=3, sort_keys=True, default=str)
+    for response_slice in zip_longest(*[iter(response)] * 4096, fillvalue=''):
+        update.message.reply_text(''.join(response_slice))
+
+
 dispatcher.add_handler(CommandHandler('start', start))
 dispatcher.add_handler(MessageHandler(Filters.forwarded & Filters.text & from_chatwars, forwarded))
 dispatcher.add_handler(CommandHandler('r', restart))
 dispatcher.add_handler(CommandHandler('routes', get_routes))
+dispatcher.add_handler(CommandHandler('flavors', get_flavors))
+dispatcher.add_handler(CommandHandler('alldata', get_bot_data))
 dispatcher.add_handler(CallbackQueryHandler(button))
 dispatcher.add_error_handler(error)
 
