@@ -134,7 +134,7 @@ def restart(update, context):
     context.bot.send_message(chat_id=update.effective_message.chat_id, text="...and we're back")
 
 
-@send_typing_action
+#@send_typing_action
 @log
 def forwarded(update, context):
     '''main function that deals with forwarded messages'''
@@ -156,7 +156,6 @@ def forwarded(update, context):
            or 'Being a naturally born pathfinder, you found a secret passage and saved some energy +1🔋' in text
            or text in context.bot_data.get('flavors', {}))
           and (update.effective_message.chat.type == 'private')):
-        # context.user_data['text_info'] = quest(text)
         ask_location(update, context)
     elif update.effective_message.chat.type == 'private':
         context.user_data['text_info'] = 'unknown'
@@ -172,8 +171,9 @@ def guild(guild_match):
 
 def store_route(update, context):
     routes = context.bot_data.get('routes', {})
-    decode = alliance(text)
+    decode = alliance(update.effective_message.text)
     times_seen = routes.get(decode['code'], {}).get('times_seen', set())
+    exact_time = update.effective_message.forward_date
     times_seen.add(str(exact_time))
     if str(exact_time) < max(times_seen):
         decode = routes.get(decode['code'], {})
