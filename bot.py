@@ -156,6 +156,8 @@ def forwarded(update, context):
         decode = alliance(text)
         times_seen = routes.get(decode['code'], {}).get('times_seen', set())
         times_seen.add(str(exact_time))
+        if str(exact_time) < max(times_seen):
+            decode = routes.get(decode['code'], {})
         decode['times_seen'] = times_seen
         decode['count'] = len(times_seen)
         routes[decode['code']] = decode
