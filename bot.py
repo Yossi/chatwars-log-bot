@@ -30,7 +30,10 @@ dispatcher = updater.dispatcher
 
 class FilterFromCW(BaseFilter):
     def filter(self, message):
-        return message.forward_from.id in [408101137]
+        try:
+            return message.forward_from.id in [408101137]
+        except:
+            return False
 
 
 from_chatwars = FilterFromCW()
