@@ -200,7 +200,7 @@ def game_time(datetime):
 
 
 def alliance(text):
-    pattern = r'You found hidden \w+ (?P<name>.+)\n(?P<occupied>You noticed that objective is captured by alliance\.\n)?(?P<defended>You noticed a horde of defender near it\.\n)?То remember the route you associated it with simple combination: (?P<code>\w+)'
+    pattern = r'You found hidden \w+ (?P<name>.+)\n(?P<occupied>You noticed that objective is captured by alliance\.\n)?(?P<defended>You noticed a .+ of defender near it\.\n)?То remember the route you associated it with simple combination: (?P<code>\w+)'
     alliance_match = re.search(pattern, text)
     return alliance_match.groupdict()
 
