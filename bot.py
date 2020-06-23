@@ -12,6 +12,7 @@ from pprint import pprint
 from secrets import LIST_OF_ADMINS, TOKEN
 from threading import Thread
 from collections import Counter
+from operator import itemgetter
 
 import filetype
 from rich import print
@@ -216,7 +217,9 @@ def ask_location(update, context):
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     data = quest(update.effective_message.text)
-    stats = context.user_data.get('flavors', {}).get(data['flavor_text'])
+    stats = context.user_data.get('flavors', {}).get(data['flavor_text'], '')
+    if stats:
+        stats = stats[0]
 
     update.message.reply_text(f'Where was this?\n{stats}', reply_markup=reply_markup, quote=True)
 
@@ -263,16 +266,21 @@ def get_flavors(update, context):
 
 @send_typing_action
 @log
-def get_routes(update, context):
+def raw_routes(update, context):
     response = json.dumps(context.bot_data.get('routes'), indent=3, sort_keys=True, default=str)
     for response_slice in zip_longest(*[iter(response)] * 4096, fillvalue=''):
         update.message.reply_text(''.join(response_slice))
 
-    # output = []
-    # for loc in context.bot_data.get('routes').values():
-    #     location = f"{loc['name']} <code>{loc['code']}</code>\nSeen: {loc['count']} Last: {max(loc['times_seen'])}\n{'Occupied' if loc['occupied'] else ''}{'Defended' if loc['defended'] else ''}"
-    #     output.append(location)
-    # print(sorted(output))
+
+@send_typing_action
+@log
+def routes(update, context):
+    output = []
+    for loc in sorted(context.bot_data.get('routes').values(), key=itemgetter('name')):
+        location = f"<code>{loc['code']}</code> {loc['name']} Seen: {loc['count']} {'🈵' if loc['occupied'] else ''}{'🛡️' if loc['defended'] else ''}"
+        output.append(location)
+    print(output)
+    update.message.reply_text('\n'.join(output), parse_mode=ParseMode.HTML)
 
 
 @restricted
@@ -287,7 +295,8 @@ def get_bot_data(update, context):
 dispatcher.add_handler(CommandHandler('start', start))
 dispatcher.add_handler(MessageHandler(Filters.forwarded & Filters.text & from_chatwars, forwarded))
 dispatcher.add_handler(CommandHandler('r', restart))
-dispatcher.add_handler(CommandHandler('routes', get_routes))
+dispatcher.add_handler(CommandHandler('raw_routes', raw_routes))
+dispatcher.add_handler(CommandHandler('routes', routes))
 dispatcher.add_handler(CommandHandler('flavors', get_flavors))
 dispatcher.add_handler(CommandHandler('alldata', get_bot_data))
 dispatcher.add_handler(CallbackQueryHandler(button))
